@@ -82,6 +82,9 @@ def main() -> None:
     validation_accuracy = []
 
     for epoch in range(epochs):
+        classifier.train()
+        criterion.train()
+
         for (labeled_input, labeled_target), (unlabeled_input, _) in zip(
             labeled_training_dataloader, unlabeled_training_dataloader
         ):
@@ -98,30 +101,34 @@ def main() -> None:
         loss = 0
         accuracy = 0
 
+        classifier.eval()
+        criterion.eval()
+
         for labeled_input, labeled_target in labeled_validation_dataloader:
-            labeled_output = classifier(labeled_input)
+            with torch.inference_mode():
+                labeled_output = classifier(labeled_input)
 
-            labeled_positive_output = labeled_output[labeled_target == 1]
-            labeled_negative_output = labeled_output[labeled_target == -1]
+                labeled_positive_output = labeled_output[labeled_target == 1]
+                labeled_negative_output = labeled_output[labeled_target == -1]
 
-            # PN risk
-            if labeled_positive_output.size(0) == 0:
-                risk_p = 0
-            else:
-                loss_p = margin_loss(labeled_positive_output)
-                risk_p = loss_p.mean()
+                # PN risk
+                if labeled_positive_output.size(0) == 0:
+                    risk_p = 0
+                else:
+                    loss_p = margin_loss(labeled_positive_output)
+                    risk_p = loss_p.mean()
 
-            if labeled_negative_output.size(0) == 0:
-                risk_n = 0
-            else:
-                loss_n = margin_loss(labeled_negative_output)
-                risk_n = loss_n.mean()
+                if labeled_negative_output.size(0) == 0:
+                    risk_n = 0
+                else:
+                    loss_n = margin_loss(labeled_negative_output)
+                    risk_n = loss_n.mean()
 
-            risk_pn = positive_rate * risk_p + (1 - positive_rate) * risk_n
-            loss += risk_pn.item()
+                risk_pn = positive_rate * risk_p + (1 - positive_rate) * risk_n
+                loss += risk_pn.item()
 
-            num_correct = torch.sum(labeled_output * labeled_target > 0)
-            accuracy += num_correct.item() / labeled_output.size(0)
+                num_correct = torch.sum(labeled_output * labeled_target > 0)
+                accuracy += num_correct.item() / labeled_output.size(0)
 
         validation_loss.append(loss / len(labeled_validation_dataloader))
         validation_accuracy.append(accuracy / len(labeled_validation_dataloader))
