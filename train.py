@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from utils.criterion import PNURisk, SquaredLoss
 from utils.datasets import DummyPositiveNegativeDataset
 from utils.models import Classifier
-from utils.visualization import plot_distribution, plot_loss
+from utils.visualization import plot_distribution, plot_loss, plot_mesh
 
 
 def main() -> None:
@@ -139,6 +139,27 @@ def main() -> None:
     plot_loss(training_loss, path=f"{loss_dir}/eta{eta:.2f}_training.png")
     plot_loss(validation_loss, path=f"{loss_dir}/eta{eta:.2f}_validation.png")
     plot_loss(validation_accuracy, path=f"{accuracy_dir}/eta{eta:.2f}_validation.png")
+
+    steps = 100
+    x = torch.linspace(-1.5, 3.0, steps=steps)
+    y = torch.linspace(-1.5, 3.0, steps=steps)
+    x, y = torch.meshgrid(x, y, indexing="xy")
+    test_inputs = torch.stack([x, y], dim=-1)
+    test_inputs = test_inputs.view(-1, 2)
+
+    with torch.inference_mode():
+        test_outputs = classifier(test_inputs)
+
+    z = test_outputs.view(steps, steps)
+
+    plot_mesh(
+        x,
+        y,
+        z,
+        labeled_dataset=labeled_training_dataset,
+        unlabeled_dataset=unlabeled_training_dataset,
+        path=f"{distribution_dir}/estimated_eta{eta:.2f}.png",
+    )
 
 
 def parse_args() -> Namespace:
