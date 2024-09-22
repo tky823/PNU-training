@@ -21,7 +21,7 @@ def main() -> None:
     accuracy_dir = "figures/accuracy"
     distribution_dir = "figures/distribution"
 
-    positive_rate = 0.7
+    positive_rate = args.positive_rate
     num_labeled_training = 100
     num_unlabeled_training = args.num_unlabeled_training
     num_labeled_validation = 50
@@ -149,6 +149,12 @@ def parse_args() -> Namespace:
         type=int,
         default=1000,
         help="Number of unlabeled samples for training.",
+    )
+    parser.add_argument(
+        "--positive-rate",
+        type=float,
+        default=0.5,
+        help="Rate of positive samples, i.e., p(t=+1).",
     )
     parser.add_argument(
         "--eta",
